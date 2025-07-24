@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hasil Seleksi Excel</title>
+</head>
+<body>
+    <h2>Upload File Excel Hasil Seleksi</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label>File A:</label>
+        <input type="file" name="fileA" required><br><br>
+
+        <label>File B:</label>
+        <input type="file" name="fileB" required><br><br>
+
+        <label>Mode Perbandingan:</label>
+        <select name="mode">
+            <option value="multi">1 sheet (A) vs multi sheet (B)</option>
+            <option value="single">1 sheet (A) vs 1 sheet (B)</option>
+        </select><br><br>
+
+        <label>Nama Sheet A (jika single):</label>
+        <input type="text" name="sheetA" placeholder="Contoh: Sheet1"><br><br>
+
+        <label>Nama Sheet B (jika single):</label>
+        <input type="text" name="sheetB" placeholder="Contoh: Sheet2"><br><br>
+
+        <button type="submit">Bandingkan</button>
+    </form>
+    <p><a href="/">⬅️ Kembali ke Beranda</a></p>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Hasil Validasi</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 5px; font-size: 14px; }
+    th { background-color: #f0f0f0; }
+    h3 { margin-top: 30px; }
+    .top-actions {
+      margin-bottom: 20px;
+    }
+    .top-actions a {
+      margin-right: 10px;
+      text-decoration: none;
+      background: #007BFF;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔍 Hasil Perbandingan Data</h2>
+
+  <div class="top-actions">
+    <a href="/compare">🔙 Kembali ke Halaman Validasi</a>
+    <a href="/export">⬇️ Unduh Hasil dalam Excel</a>
+  </div>
+
+  {% if results %}
+    {% for sheet, data in results.items() %}
+      <h3>{{ sheet }}</h3>
+      <table>
+        <thead>
+          <tr>
+            {% for col in data[0].keys() %}
+              <th>{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+            <tr>
+              {% for value in row.values() %}
+                <td>{{ value }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+  {% else %}
+    <p><strong>Tidak ada hasil perbandingan.</strong></p>
+  {% endif %}
+</body>
+</html>

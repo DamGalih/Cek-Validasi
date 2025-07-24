@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Filter Katalog Excel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    form {
+      max-width: 600px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    a.button-link {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔍 Filter Katalog Excel</h2>
+  <form method="post" enctype="multipart/form-data">
+    <label for="file">Pilih File Excel</label>
+    <input type="file" name="file" required>
+
+    <label for="referensi">Referensi</label>
+    <input type="text" name="referensi" placeholder="Contoh: Perguruan Tinggi">
+
+    <label for="kategori">Kategori</label>
+    <input type="text" name="kategori" placeholder="Contoh: Fiksi, Novel, Agama">
+
+    <label for="harga_min">Harga Minimum</label>
+    <input type="number" step="any" name="harga_min" placeholder="Contoh: 10000">
+
+    <label for="harga_max">Harga Maksimum</label>
+    <input type="number" step="any" name="harga_max" placeholder="Contoh: 50000">
+
+    <label for="tahun_filter">Tahun Terbit (pisahkan dengan koma)</label>
+    <input type="text" name="tahun_filter" placeholder="Contoh: 2021, 2022, 2023">
+
+    <button type="submit">📤 Filter</button>
+  </form>
+
+  <a href="/" class="button-link">🔙 Kembali ke Halaman Utama</a>
+</body>
+</html>

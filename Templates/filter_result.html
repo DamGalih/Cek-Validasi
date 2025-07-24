@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Hasil Filter Katalog</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 5px; font-size: 14px; }
+    th { background-color: #f0f0f0; }
+    h3 { margin-top: 30px; }
+    .top-actions {
+      margin-bottom: 20px;
+    }
+    .top-actions a {
+      margin-right: 10px;
+      text-decoration: none;
+      background: #007BFF;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📋 Hasil Filter Katalog</h2>
+
+  <div class="top-actions">
+    <a href="/filter">🔙 Kembali ke Halaman Filter</a>
+    <a href="/export-filter">⬇️ Unduh Hasil dalam Excel</a>
+  </div>
+
+  {% if results %}
+    {% for sheet, df in results.items() %}
+      <h3>{{ sheet }}</h3>
+      <table>
+        <thead>
+          <tr>
+            {% for col in df.columns %}
+              <th>{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in df.values %}
+            <tr>
+              {% for cell in row %}
+                <td>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+  {% else %}
+    <p><strong>Tidak ada hasil yang cocok.</strong></p>
+  {% endif %}
+</body>
+</html>
