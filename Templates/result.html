@@ -1,59 +1,84 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Hasil Validasi</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 5px; font-size: 14px; }
-    th { background-color: #f0f0f0; }
-    h3 { margin-top: 30px; }
-    .top-actions {
-      margin-bottom: 20px;
-    }
-    .top-actions a {
-      margin-right: 10px;
-      text-decoration: none;
-      background: #007BFF;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Hasil Perbandingan</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 8px;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .match {
+            background-color: #d4edda;
+        }
+        .mismatch {
+            background-color: #f8d7da;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 10px 5px 0 0;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-  <h2>🔍 Hasil Perbandingan Data</h2>
+<div class="container">
+    <h2>🔍 Hasil Perbandingan Data</h2>
 
-  <div class="top-actions">
-    <a href="/compare">🔙 Kembali ke Halaman Validasi</a>
-    <a href="/export">⬇️ Unduh Hasil dalam Excel</a>
-  </div>
+    <a href="/" class="btn">🔙 Kembali ke Halaman Validasi</a>
+    <a href="/export" class="btn">⬇️ Unduh Hasil dalam Excel</a>
 
-  {% if results %}
-    {% for sheet, data in results.items() %}
-      <h3>{{ sheet }}</h3>
-      <table>
-        <thead>
-          <tr>
-            {% for col in data[0].keys() %}
-              <th>{{ col }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in data %}
-            <tr>
-              {% for value in row.values() %}
-                <td>{{ value }}</td>
-              {% endfor %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endfor %}
-  {% else %}
-    <p><strong>Tidak ada hasil perbandingan.</strong></p>
-  {% endif %}
+    {% if results %}
+        {% for sheet_name, rows in results.items() %}
+            <h3>{{ sheet_name }}</h3>
+            {% if rows %}
+                <table>
+                    <thead>
+                        <tr>
+                            {% for col in rows[0].keys() %}
+                                <th>{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                {% for val in row.values() %}
+                                    <td>{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>Tidak ada data di sheet ini.</p>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>Tidak ada hasil perbandingan.</p>
+    {% endif %}
+</div>
 </body>
 </html>

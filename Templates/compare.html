@@ -1,32 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Hasil Seleksi Excel</title>
+    <title>Perbandingan Excel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="file"], input[type="text"], select {
+            width: 300px;
+            padding: 6px;
+            margin-top: 4px;
+        }
+        button {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            margin-top: 20px;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-    <h2>Upload File Excel Hasil Seleksi</h2>
-    <form method="POST" enctype="multipart/form-data">
-        <label>File A:</label>
+    <h2>📊 Upload File Excel untuk Dibandingkan</h2>
+
+    <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <label>File A:</label><br>
         <input type="file" name="fileA" required><br><br>
 
-        <label>File B:</label>
+        <label>File B:</label><br>
         <input type="file" name="fileB" required><br><br>
 
-        <label>Mode Perbandingan:</label>
-        <select name="mode">
-            <option value="multi">1 sheet (A) vs multi sheet (B)</option>
-            <option value="single">1 sheet (A) vs 1 sheet (B)</option>
+        <label>Mode Perbandingan:</label><br>
+        <select name="mode" id="mode" onchange="toggleSheetInputs()">
+            <option value="multi">1 Sheet (A) vs Multi Sheet (B)</option>
+            <option value="single">1 Sheet (A) vs 1 Sheet (B)</option>
+            <option value="multi-matching">Cocokkan Nama Sheet yang Sama</option>
         </select><br><br>
 
-        <label>Nama Sheet A (jika single):</label>
-        <input type="text" name="sheetA" placeholder="Contoh: Sheet1"><br><br>
+        <div id="sheet-inputs">
+            <div>
+                <label>Nama Sheet A:</label><br>
+                <input type="text" name="sheetA" id="sheetA" placeholder="Contoh: Sheet1"><br><br>
+            </div>
 
-        <label>Nama Sheet B (jika single):</label>
-        <input type="text" name="sheetB" placeholder="Contoh: Sheet2"><br><br>
+            <div>
+                <label>Nama Sheet B:</label><br>
+                <input type="text" name="sheetB" id="sheetB" placeholder="Contoh: Sheet2"><br><br>
+            </div>
+        </div>
 
-        <button type="submit">Bandingkan</button>
+
+        <button type="submit">🔍 Bandingkan</button>
     </form>
-    <p><a href="/">⬅️ Kembali ke Beranda</a></p>
+
+    <a class="back-link" href="/">⬅️ Kembali ke Beranda</a>
+
+    <script>
+    function toggleSheetInputs() {
+        const mode = document.getElementById("mode").value;
+        const sheetAField = document.getElementById("sheetA").parentElement;
+        const sheetBField = document.getElementById("sheetB").parentElement;
+
+        if (mode === "single") {
+            sheetAField.style.display = "block";
+            sheetBField.style.display = "block";
+        } else if (mode === "multi") {
+            sheetAField.style.display = "block";
+            sheetBField.style.display = "none";
+        } else {
+            sheetAField.style.display = "none";
+            sheetBField.style.display = "none";
+        }
+    }
+
+    function validateForm() {
+        const mode = document.getElementById("mode").value;
+        const sheetA = document.getElementById("sheetA").value.trim();
+        const sheetB = document.getElementById("sheetB").value.trim();
+
+        if (mode === "single") {
+            if (!sheetA || !sheetB) {
+                alert("Mohon isi nama Sheet A dan Sheet B untuk mode 'single'.");
+                return false;
+            }
+        } else if (mode === "multi") {
+            if (!sheetA) {
+                alert("Mohon isi nama Sheet A untuk mode 'multi'.");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    window.onload = toggleSheetInputs;
+</script>
+
 </body>
 </html>

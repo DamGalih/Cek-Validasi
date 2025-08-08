@@ -1,98 +1,112 @@
 from flask import Flask, render_template, request, send_file, session
 import pandas as pd
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 import os
 import pickle
 import uuid
+from difflib import SequenceMatcher
+from fuzzywuzzy import fuzz, process
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
+def fuzzy_match(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
-# ==================== FITUR 1: BANDINGKAN EXCEL ====================
-def compare_sheets(sheet_a, sheet_b):
-    result = []
-    used_a = set()
-    for _, row_b in sheet_b.iterrows():
-        match = None
-        method = ""
-        similarity = ""
+# ==================== FITUR 1: BANDINGKAN EXCEL (OPTIMASI CEPAT) ====================
 
-        for idx_a, row_a in sheet_a.iterrows():
-            if idx_a in used_a:
-                continue
-            if row_a.get("UUID") == row_b.get("UUID") and pd.notna(row_b.get("UUID")):
-                match = row_a
-                method = "UUID"
-                break
-            elif row_a.get("ISBN") == row_b.get("ISBN") and pd.notna(row_b.get("ISBN")):
-                match = row_a
-                method = "ISBN"
-                break
-            elif row_a.get("EISBN") == row_b.get("EISBN") and pd.notna(row_b.get("EISBN")):
-                match = row_a
-                method = "EISBN"
-                break
-            elif pd.notna(row_b.get("Judul")) and pd.notna(row_a.get("Judul")):
-                score = fuzz.token_sort_ratio(str(row_a['Judul']), str(row_b['Judul']))
-                if score >= 85:
-                    match = row_a
-                    method = "Judul (Fuzzy)"
-                    similarity = score
-                    break
+def compare_sheets_fast(df1, df2):
+    hasil = []
 
-        if match is not None:
-            used_a.add(match.name)
-            result.append({
-                "UUID_A": match.get("UUID"),
-                "UUID_B": row_b.get("UUID"),
-                "Judul_A": match.get("Judul"),
-                "Judul_B": row_b.get("Judul"),
-                "Metode": method,
-                "Similarity": similarity
+    # Pre-index untuk pencarian cepat
+    df2_uuid = df2.set_index('UUID', drop=False) if 'UUID' in df2.columns else pd.DataFrame()
+    df2_isbn = df2.set_index('ISBN', drop=False) if 'ISBN' in df2.columns else pd.DataFrame()
+    df2_eisbn = df2.set_index('EISBN', drop=False) if 'EISBN' in df2.columns else pd.DataFrame()
+    judul_list = df2['Judul'].dropna().astype(str).tolist() if 'Judul' in df2.columns else []
+
+    for _, row1 in df1.iterrows():
+        matched_row = None
+        match_method = None
+
+        uuid = row1.get('UUID')
+        isbn = row1.get('ISBN')
+        eisbn = row1.get('EISBN')
+        judul = row1.get('Judul')
+
+        # ===== 1. Cocok UUID =====
+        if pd.notna(uuid) and uuid in df2_uuid.index:
+            matched_row = df2_uuid.loc[uuid]
+            match_method = 'UUID'
+
+        # ===== 2. Cocok ISBN =====
+        if matched_row is None and pd.notna(isbn) and isbn in df2_isbn.index:
+            matched_row = df2_isbn.loc[isbn]
+            match_method = 'ISBN'
+
+        # ===== 3. Cocok EISBN =====
+        if matched_row is None and pd.notna(eisbn) and eisbn in df2_eisbn.index:
+            matched_row = df2_eisbn.loc[eisbn]
+            match_method = 'EISBN'
+
+        # ===== 4. Fuzzy Judul =====
+        if matched_row is None and pd.notna(judul) and judul_list:
+            best_match = process.extractOne(str(judul), judul_list, scorer=fuzz.ratio)
+            if best_match and best_match[1] > 85:
+                matched_row = df2[df2['Judul'] == best_match[0]].iloc[0]
+                match_method = 'Judul (Fuzzy)'
+
+        # ===== Simpan Hasil =====
+        if matched_row is not None:
+            harga1 = row1.get('Harga', 0) or 0
+            harga2 = matched_row.get('Harga', 0) or 0
+            selisih_harga = harga1 - harga2
+
+            hasil.append({
+                'Judul_Referensi': row1.get('Judul') or '-',
+                'Judul_Katalog': matched_row.get('Judul') or '-',
+                'UUID': uuid or matched_row.get('UUID') or '-',
+                'ISBN': isbn or matched_row.get('ISBN') or '-',
+                'EISBN': eisbn or matched_row.get('EISBN') or '-',
+                'Harga_Referensi': harga1,
+                'Harga_Katalog': harga2,
+                'Selisih_Harga': selisih_harga,
+                'Metode': match_method
             })
-        else:
-            result.append({
-                "UUID_A": None,
-                "UUID_B": row_b.get("UUID"),
-                "Judul_A": None,
-                "Judul_B": row_b.get("Judul"),
-                "Metode": "Tidak ditemukan",
-                "Similarity": ""
-            })
-    return result
+
+    return pd.DataFrame(hasil)
 
 
-def compare_excels(file_a, file_b, mode='multi', sheet_a_name=None, sheet_b_name=None):
-    try:
-        df_a = pd.read_excel(file_a, sheet_name=None)
-        df_b = pd.read_excel(file_b, sheet_name=None)
-    except Exception as e:
-        return {"Error": [{"Metode": "Gagal membaca file Excel"}]}
-
-    results_by_sheet = {}
+# ==================== PANGGIL FUNGSI BANDINGKAN ====================
+def compare_excels(file_a, file_b, mode, sheet_a_name=None, sheet_b_name=None):
+    xls_a = pd.ExcelFile(file_a)
+    xls_b = pd.ExcelFile(file_b)
+    results = {}
 
     if mode == "single":
         if not sheet_a_name or not sheet_b_name:
-            return {"Error": [{"Metode": "Nama sheet tidak lengkap untuk mode single"}]}
+            raise ValueError("Nama Sheet A dan B wajib diisi untuk mode 'single'.")
+        df_a = xls_a.parse(sheet_a_name)
+        df_b = xls_b.parse(sheet_b_name)
+        results["Perbandingan"] = compare_sheets_fast(df_a, df_b)
 
-        sheet_a = df_a.get(sheet_a_name)
-        sheet_b = df_b.get(sheet_b_name)
+    elif mode == "multi":
+        if not sheet_a_name:
+            raise ValueError("Nama Sheet A wajib diisi untuk mode 'multi'.")
+        df_a = xls_a.parse(sheet_a_name)
+        for sheet in xls_b.sheet_names:
+            df_b = xls_b.parse(sheet)
+            results[f"{sheet_a_name} vs {sheet}"] = compare_sheets_fast(df_a, df_b)
 
-        if sheet_a is None or sheet_b is None:
-            return {"Error": [{"Metode": f"Sheet tidak ditemukan: {sheet_a_name} atau {sheet_b_name}"}]}
+    elif mode == "multi-matching":
+        for sheet in set(xls_a.sheet_names).intersection(xls_b.sheet_names):
+            df_a = xls_a.parse(sheet)
+            df_b = xls_b.parse(sheet)
+            results[sheet] = compare_sheets_fast(df_a, df_b)
 
-        results_by_sheet[f"{sheet_a_name} vs {sheet_b_name}"] = compare_sheets(sheet_a, sheet_b)
     else:
-        try:
-            sheet_a = list(df_a.values())[0]
-        except IndexError:
-            return {"Error": [{"Metode": "File A tidak memiliki sheet"}]}
+        raise ValueError("Mode perbandingan tidak dikenali.")
 
-        for name, sheet_b in df_b.items():
-            results_by_sheet[name] = compare_sheets(sheet_a, sheet_b)
-
-    return results_by_sheet
+    return results
 
 
 # ==================== FITUR 2: FILTER KATALOG ====================
@@ -103,11 +117,8 @@ def filter_excel_by_criteria(file, referensi_filter, kategori_filter, harga_min,
     for sheet in xls.sheet_names:
         try:
             df = pd.read_excel(xls, sheet_name=sheet)
-
-            # Normalisasi kolom
             df.columns = df.columns.str.strip()
 
-            # Cari kolom tahun yang cocok
             tahun_col = next((col for col in df.columns if 'Tahun' in col and 'Digital' in col), None)
 
             if tahun_col and {'Referensi', 'Kategori*', 'HARGA SATUAN'}.issubset(df.columns):
@@ -116,7 +127,6 @@ def filter_excel_by_criteria(file, referensi_filter, kategori_filter, harga_min,
                 df['HARGA SATUAN'] = pd.to_numeric(df['HARGA SATUAN'], errors='coerce')
                 df[tahun_col] = pd.to_numeric(df[tahun_col], errors='coerce')
 
-                # Terapkan filter jika ada input
                 if referensi_filter:
                     referensi_filter = referensi_filter.lower().strip()
                     df = df[df['Referensi'].str.contains(referensi_filter, na=False)]
@@ -134,7 +144,6 @@ def filter_excel_by_criteria(file, referensi_filter, kategori_filter, harga_min,
                 if tahun_filter:
                     df = df[df[tahun_col].isin(tahun_filter)]
 
-                # Simpan hasil jika tidak kosong
                 if not df.empty:
                     filtered_results[sheet[:31]] = df
 
@@ -145,22 +154,24 @@ def filter_excel_by_criteria(file, referensi_filter, kategori_filter, harga_min,
     return filtered_results
 
 
-
-
 # ==================== ROUTES ====================
 @app.route('/')
 def home():
     return render_template('index.html')
 
-
 @app.route('/compare', methods=['GET', 'POST'])
 def compare():
     if request.method == 'POST':
-        file_a = request.files['fileA']
-        file_b = request.files['fileB']
+        file_a = request.files.get('fileA')
+        file_b = request.files.get('fileB')
         mode = request.form.get('mode')
-        sheet_a_name = request.form.get('sheetA')
-        sheet_b_name = request.form.get('sheetB')
+        sheet_a_name = request.form.get("sheetA", "").strip()
+        sheet_b_name = request.form.get("sheetB", "").strip()
+
+        if not file_a or not file_b:
+            return "File A dan File B wajib diunggah.", 400
+        if mode == 'single' and (not sheet_a_name or not sheet_b_name):
+            return "Nama Sheet A dan Sheet B wajib diisi untuk mode single.", 400
 
         results = compare_excels(file_a, file_b, mode, sheet_a_name, sheet_b_name)
 
@@ -169,10 +180,10 @@ def compare():
         with open(f"tmp/{session_id}.pkl", "wb") as f:
             pickle.dump(results, f)
         session["comparison_file"] = session_id
-
+        results = {k: v.to_dict(orient='records') for k, v in results.items()}
         return render_template('result.html', results=results)
-    return render_template('compare.html')
 
+    return render_template('compare.html')
 
 @app.route('/filter', methods=['GET', 'POST'])
 def filter():
@@ -206,8 +217,6 @@ def filter():
         return render_template('filter_result.html', results=results)
     return render_template('filter.html')
 
-
-
 @app.route('/export')
 def export():
     session_id = session.get("comparison_file")
@@ -225,7 +234,13 @@ def export():
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
         for sheet_name, data in results.items():
             df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+
+            # --- Filter hanya data yang ditemukan ---
+            if "Keterangan" in df.columns:
+                df = df[df["Keterangan"] != "Tidak ditemukan"]
+
+            if not df.empty:
+                df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
 
     return send_file(filename, as_attachment=True)
 
@@ -249,7 +264,6 @@ def export_filter():
             df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
 
     return send_file(filename, as_attachment=True)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
