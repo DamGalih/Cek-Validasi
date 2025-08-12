@@ -35,14 +35,13 @@ def load_sheet_with_header_offset(xls, sheet_name, header_row=8):
 
 
 # ==================== FITUR 1: BANDINGKAN EXCEL (OPTIMASI CEPAT) ====================
-
 def compare_sheets_fast(df1, df2):
     df_result = df1.copy()
     df_result['Status Cocok'] = 'Tidak ditemukan'
     df_result['Metode Cocok'] = ''
 
     # Pastikan tipe kolom string dan strip spasi
-    for col in ['UUID', 'ISBN Cetak', 'ISBN Elektronik*', 'Judul*']:
+    for col in ['UUID', 'ISBN Cetak', 'ISBN Elektronik*', 'Judul*', 'Anak Judul']:
         if col in df1.columns:
             df1[col] = df1[col].astype(str).str.strip()
         if col in df2.columns:
@@ -51,7 +50,9 @@ def compare_sheets_fast(df1, df2):
     df2_uuid = df2.set_index('UUID', drop=False) if 'UUID' in df2.columns else pd.DataFrame()
     df2_isbn = df2.set_index('ISBN Cetak', drop=False) if 'ISBN Cetak' in df2.columns else pd.DataFrame()
     df2_eisbn = df2.set_index('ISBN Elektronik*', drop=False) if 'ISBN Elektronik*' in df2.columns else pd.DataFrame()
+
     judul_list = df2['Judul*'].dropna().astype(str).tolist() if 'Judul*' in df2.columns else []
+    anak_judul_list = df2['Anak Judul'].dropna().astype(str).tolist() if 'Anak Judul' in df2.columns else []
 
     for idx, row1 in df_result.iterrows():
         matched_row = None
@@ -64,43 +65,67 @@ def compare_sheets_fast(df1, df2):
 
         print(f"Periksa baris {idx}: UUID={uuid}, ISBN={isbn}, EISBN={eisbn}, Judul={judul}")
 
-        # Cek UUID
+        # 1️⃣ Cek UUID
         if pd.notna(uuid) and uuid in df2_uuid.index:
             matched_row = df2_uuid.loc[uuid]
             if isinstance(matched_row, pd.DataFrame):
                 matched_row = matched_row.iloc[0]
             match_method = 'UUID'
-        # Cek ISBN Cetak
+
+        # 2️⃣ Cek ISBN Cetak
         elif pd.notna(isbn) and isbn in df2_isbn.index:
             matched_row = df2_isbn.loc[isbn]
             if isinstance(matched_row, pd.DataFrame):
                 matched_row = matched_row.iloc[0]
             match_method = 'ISBN Cetak'
-        # Cek ISBN Elektronik
+
+        # 3️⃣ Cek ISBN Elektronik
         elif pd.notna(eisbn) and eisbn in df2_eisbn.index:
             matched_row = df2_eisbn.loc[eisbn]
             if isinstance(matched_row, pd.DataFrame):
                 matched_row = matched_row.iloc[0]
             match_method = 'ISBN Elektronik*'
-        # Fuzzy Judul
+
+        # 4️⃣ Fuzzy match Judul* (dengan validasi Anak Judul sama)
         elif pd.notna(judul) and judul_list:
+            possible_matches = None
             best_match = process.extractOne(str(judul), judul_list, scorer=fuzz.ratio)
             if best_match:
                 print(f"Judul fuzzy match: {best_match[0]} dengan skor {best_match[1]}")
-            if best_match and best_match[1] > 70:  # coba threshold lebih rendah dulu
-                matched_row = df2[df2['Judul*'] == best_match[0]].iloc[0]
-                match_method = 'Judul* (Fuzzy)'
+            if best_match and best_match[1] > 70:
+                possible_matches = df2[df2['Judul*'] == best_match[0]]
 
+                if 'Anak Judul' in df2.columns and 'Anak Judul' in df1.columns:
+                    anak1 = str(row1.get('Anak Judul', '')).strip()
+                    for _, candidate in possible_matches.iterrows():
+                        anak2 = str(candidate.get('Anak Judul', '')).strip()
+                        if anak1 == anak2:  # sama persis
+                            matched_row = candidate
+                            match_method = 'Judul* + Anak Judul cocok'
+                            break
+                    if matched_row is None:
+                        print(f"Judul cocok tapi Anak Judul beda → dianggap tidak cocok")
+                else:
+                    # Kalau tidak ada kolom Anak Judul di salah satu file
+                    matched_row = possible_matches.iloc[0]
+                    match_method = 'Judul* (Fuzzy)'
+
+        # 5️⃣ Fuzzy match Anak Judul (kalau belum ketemu)
+        if matched_row is None and pd.notna(judul) and anak_judul_list:
+            best_match_anak = process.extractOne(str(judul), anak_judul_list, scorer=fuzz.ratio)
+            if best_match_anak:
+                print(f"Anak Judul fuzzy match: {best_match_anak[0]} dengan skor {best_match_anak[1]}")
+            if best_match_anak and best_match_anak[1] > 70:
+                matched_row = df2[df2['Anak Judul'] == best_match_anak[0]].iloc[0]
+                match_method = 'Anak Judul (Fuzzy)'
+
+        # Simpan hasil
         if matched_row is not None:
             df_result.at[idx, 'Status Cocok'] = 'Ditemukan'
             df_result.at[idx, 'Metode Cocok'] = match_method
             print(f"Baris {idx} ditemukan dengan metode {match_method}")
 
     return df_result
-
-
-
-
 # ==================== PANGGIL FUNGSI BANDINGKAN ====================
 def compare_excels(file_a, file_b, mode, sheet_a_name=None, sheet_b_name=None):
     import re
