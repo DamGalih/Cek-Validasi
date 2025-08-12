@@ -49,36 +49,11 @@
 
     <a href="/" class="btn">🔙 Kembali ke Halaman Validasi</a>
     <a href="/export" class="btn">⬇️ Unduh Hasil dalam Excel</a>
-
-    {% if results %}
-        {% for sheet_name, rows in results.items() %}
-            <h3>{{ sheet_name }}</h3>
-            {% if rows %}
-                <table>
-                    <thead>
-                        <tr>
-                            {% for col in rows[0].keys() %}
-                                <th>{{ col }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in rows %}
-                            <tr>
-                                {% for val in row.values() %}
-                                    <td>{{ val }}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>Tidak ada data di sheet ini.</p>
-            {% endif %}
-        {% endfor %}
-    {% else %}
-        <p>Tidak ada hasil perbandingan.</p>
-    {% endif %}
+    <ul>
+    {% for sheet, count in summary.items() %}
+    <li><strong>{{ sheet }}</strong>: {{ count }} judul ditemukan</li>
+  {% endfor %}
+  </ul>
 </div>
 </body>
 </html>

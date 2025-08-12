@@ -46,27 +46,29 @@
 </head>
 <body>
   <h2>🔍 Filter Katalog Excel</h2>
-  <form method="post" enctype="multipart/form-data">
-    <label for="file">Pilih File Excel</label>
-    <input type="file" name="file" required>
+  <form action="/filter" method="post" enctype="multipart/form-data">
+  <label>Referensi:</label>
+  <input type="text" name="referensi"><br>
 
-    <label for="referensi">Referensi</label>
-    <input type="text" name="referensi" placeholder="Contoh: Perguruan Tinggi">
+  <label>Kategori:</label>
+  <input type="text" name="kategori"><br>
 
-    <label for="kategori">Kategori</label>
-    <input type="text" name="kategori" placeholder="Contoh: Fiksi, Novel, Agama">
+  <label>Harga Minimum:</label>
+  <input type="number" name="harga_min" step="0.01"><br>
 
-    <label for="harga_min">Harga Minimum</label>
-    <input type="number" step="any" name="harga_min" placeholder="Contoh: 10000">
+  <label>Harga Maksimum:</label>
+  <input type="number" name="harga_max" step="0.01"><br>
 
-    <label for="harga_max">Harga Maksimum</label>
-    <input type="number" step="any" name="harga_max" placeholder="Contoh: 50000">
+  <label>Tahun Terbit Digital (pisahkan dengan koma):</label>
+  <input type="text" name="tahun_filter"><br>
 
-    <label for="tahun_filter">Tahun Terbit (pisahkan dengan koma)</label>
-    <input type="text" name="tahun_filter" placeholder="Contoh: 2021, 2022, 2023">
+  <label>File Excel:</label>
+  <input type="file" name="file"><br><br>
 
-    <button type="submit">📤 Filter</button>
-  </form>
+  <input type="submit" value="Filter">
+</form>
+
+
 
   <a href="/" class="button-link">🔙 Kembali ke Halaman Utama</a>
 </body>
