@@ -1,21 +1,57 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Hasil Filter</title>
+    <title>Hasil Filter Excel</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 70%;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .summary-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            width: fit-content;
+        }
+    </style>
 </head>
 <body>
-    <h2>Ringkasan Hasil Filter</h2>
-    {% if summary %}
-        <ul>
-        {% for sheet, count in summary.items() %}
-            <li><strong>{{ sheet }}</strong>: {{ count }} baris</li>
-        {% endfor %}
-        </ul>
-        <p><a href="/export_filter">⬇️ Download Hasil Filter (.xlsx)</a></p>
-    {% else %}
-        <p><em>Tidak ada data yang sesuai filter.</em></p>
-    {% endif %}
-    <p><a href="/filter">Kembali ke Form Filter</a></p>
+    <h1>Hasil Filter Data Excel</h1>
+
+    <div class="summary-box">
+        <h3>Ringkasan</h3>
+        <table>
+            <tr>
+                <th>Nama Sheet</th>
+                <th>Jumlah Data</th>
+            </tr>
+            {% for sheet, count in summary.items() %}
+            <tr>
+                <td>{{ sheet }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <br>
+    <a href="{{ url_for('export_filter') }}">
+        <button>Download Hasil Filter (Excel)</button>
+    </a>
+    <br><br>
+
+    <a href="{{ url_for('filter') }}">Kembali ke Filter</a>
 </body>
 </html>

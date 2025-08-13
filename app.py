@@ -201,7 +201,7 @@ def compare_excels(file_a, file_b, mode, sheet_a_name=None, sheet_b_name=None):
 
 
 # ==================== FITUR 2: FILTER KATALOG ====================
-def filter_excel_by_criteria(file_path, referensi=None, kategori=None, harga_min=None, harga_max=None, tahun_filter=None):
+def filter_excel_by_criteria(file_path, referensi=None, kode_referensi=None, kategori=None, harga_min=None, harga_max=None, tahun_filter=None):
     wb = load_workbook(file_path)
     summary = {}
 
@@ -209,40 +209,50 @@ def filter_excel_by_criteria(file_path, referensi=None, kategori=None, harga_min
         ws = wb[sheet]
 
         data = list(ws.values)
-        columns = data[8]  # header di baris 9 (index 8)
+        columns = data[8]  # header di baris 9
         rows = data[9:]    # data mulai baris 10
 
         df = pd.DataFrame(rows, columns=columns)
         df.columns = df.columns.str.strip()
 
+        # Filter Referensi (bisa banyak)
         if referensi and 'Referensi' in df.columns:
-            df = df[df['Referensi'] == referensi]
+            df = df[df['Referensi'].isin(referensi)]
+
+        # Filter Kode Referensi (bisa banyak)
+        if kode_referensi and 'Kode Referensi' in df.columns:
+            df = df[df['Kode Referensi'].isin(kode_referensi)]
+
+        # Filter Kategori
         if kategori and 'Kategori' in df.columns:
             df = df[df['Kategori'] == kategori]
+
+        # Filter harga
         if harga_min is not None and 'Harga' in df.columns:
             df = df[df['Harga'] >= harga_min]
         if harga_max is not None and 'Harga' in df.columns:
             df = df[df['Harga'] <= harga_max]
+
+        # Filter tahun
         if tahun_filter and 'Tahun' in df.columns:
-            if isinstance(tahun_filter, list):
-                df = df[df['Tahun'].isin(tahun_filter)]
-            else:
-                df = df[df['Tahun'] == tahun_filter]
+            df = df[df['Tahun'].isin(tahun_filter)]
 
         summary[sheet] = len(df)
 
-        # Kosongkan data lama mulai baris 10
+        # Hapus data lama
         for row in ws.iter_rows(min_row=10, max_row=ws.max_row):
             for cell in row:
                 if not isinstance(cell, MergedCell):
                     cell.value = None
 
-        # Tulis ulang data hasil filter mulai baris 10
+        # Tulis data hasil filter
         for r_idx, row in enumerate(df.itertuples(index=False), start=10):
             for c_idx, value in enumerate(row, start=1):
                 ws.cell(row=r_idx, column=c_idx, value=value)
 
     return wb, summary
+
+
 # ==================== ROUTES ====================
 @app.route('/')
 def home():
@@ -287,8 +297,6 @@ def compare():
 
     return render_template('compare.html')
 
-
-
 @app.route('/filter', methods=['GET', 'POST'])
 def filter():
     if request.method == 'POST':
@@ -298,32 +306,43 @@ def filter():
         save_path = os.path.join("tmp", filename)
         file.save(save_path)
 
-        referensi = request.form.get('referensi', '').strip()
+        # Ambil input filter
+        referensi_raw = request.form.get('referensi', '').strip()
+        kode_referensi_raw = request.form.get('kode_referensi', '').strip()
         kategori = request.form.get('kategori', '').strip()
         harga_min_raw = request.form.get('harga_min', '').strip()
         harga_max_raw = request.form.get('harga_max', '').strip()
         tahun_raw = request.form.get('tahun_filter', '').strip()
 
+        # Parsing referensi jadi list
+        referensi = [r.strip() for r in referensi_raw.split(',') if r.strip()] if referensi_raw else None
+        kode_referensi = [k.strip() for k in kode_referensi_raw.split(',') if k.strip()] if kode_referensi_raw else None
+
+        # Parsing harga
         try:
             harga_min = float(harga_min_raw) if harga_min_raw else None
             harga_max = float(harga_max_raw) if harga_max_raw else None
         except ValueError:
             return "Input harga tidak valid."
 
+        # Parsing tahun
         try:
             tahun_filter = [int(t.strip()) for t in tahun_raw.split(',') if t.strip().isdigit()] if tahun_raw else None
         except ValueError:
             return "Input tahun tidak valid."
 
+        # Jalankan filter
         wb, summary = filter_excel_by_criteria(
             save_path,
             referensi=referensi,
+            kode_referensi=kode_referensi,
             kategori=kategori,
             harga_min=harga_min,
             harga_max=harga_max,
             tahun_filter=tahun_filter
         )
 
+        # Simpan hasil
         session_id = str(uuid.uuid4())
         filtered_file_path = f"tmp/{session_id}_filtered.xlsx"
         wb.save(filtered_file_path)

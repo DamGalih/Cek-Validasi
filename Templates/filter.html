@@ -1,75 +1,34 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Filter Katalog Excel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    form {
-      max-width: 600px;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="number"], input[type="file"] {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-      margin-top: 5px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    a.button-link {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-    }
-  </style>
+    <title>Filter Excel</title>
 </head>
 <body>
-  <h2>🔍 Filter Katalog Excel</h2>
-  <form action="/filter" method="post" enctype="multipart/form-data">
-  <label>Referensi:</label>
-  <input type="text" name="referensi"><br>
+    <h1>Filter Data Excel</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="file">Upload File Excel:</label><br>
+        <input type="file" name="file" accept=".xlsx,.xls" required><br><br>
 
-  <label>Kategori:</label>
-  <input type="text" name="kategori"><br>
+        <label for="referensi">Referensi (pisahkan dengan koma jika lebih dari satu):</label><br>
+        <input type="text" name="referensi" placeholder="contoh: Perguruan tinggi, Perpustakaan Nasional"><br><br>
 
-  <label>Harga Minimum:</label>
-  <input type="number" name="harga_min" step="0.01"><br>
+        <label for="kode_referensi">Kode Referensi (pisahkan dengan koma jika lebih dari satu):</label><br>
+        <input type="text" name="kode_referensi" placeholder="contoh: K123, K456"><br><br>
 
-  <label>Harga Maksimum:</label>
-  <input type="number" name="harga_max" step="0.01"><br>
+        <label for="kategori">Kategori:</label><br>
+        <input type="text" name="kategori" placeholder="contoh: Buku Teks"><br><br>
 
-  <label>Tahun Terbit Digital (pisahkan dengan koma):</label>
-  <input type="text" name="tahun_filter"><br>
+        <label for="harga_min">Harga Minimum:</label><br>
+        <input type="number" step="0.01" name="harga_min"><br><br>
 
-  <label>File Excel:</label>
-  <input type="file" name="file"><br><br>
+        <label for="harga_max">Harga Maksimum:</label><br>
+        <input type="number" step="0.01" name="harga_max"><br><br>
 
-  <input type="submit" value="Filter">
-</form>
+        <label for="tahun_filter">Tahun (pisahkan dengan koma jika lebih dari satu):</label><br>
+        <input type="text" name="tahun_filter" placeholder="contoh: 2020, 2021"><br><br>
 
-
-
-  <a href="/" class="button-link">🔙 Kembali ke Halaman Utama</a>
+        <button type="submit">Filter</button>
+        <a class="back-link" href="/">⬅️ Kembali ke Beranda</a>
+    </form>
 </body>
 </html>
